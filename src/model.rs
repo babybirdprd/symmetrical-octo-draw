@@ -44,3 +44,31 @@ pub enum Action {
     Wipe,
     NewBoard,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
+pub enum AgentProvider {
+    #[default]
+    OpenAI,
+    Anthropic,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AgentConfig {
+    pub provider: AgentProvider,
+    pub model: String,
+    pub api_key: String,
+    pub system_prompt: String,
+    pub research_topic: String,
+}
+
+impl Default for AgentConfig {
+    fn default() -> Self {
+        Self {
+            provider: AgentProvider::OpenAI,
+            model: "gpt-4o".to_string(),
+            api_key: String::new(),
+            system_prompt: "You are a research agent. Use the tools available to research the topic and visualize the findings on the board.".to_string(),
+            research_topic: "Rust programming language state management".to_string(),
+        }
+    }
+}
