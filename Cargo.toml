@@ -6,9 +6,7 @@ edition = "2021"
 
 [dependencies]
 # Dioxus with fullstack and router
-dioxus = { version = "0.6.0", features = ["fullstack", "router"] }
-# NOTE: Downgrading to 0.6.0 or checking 0.7.1 compatibility because fullstack feature set might differ.
-# Actually, let's stick to 0.7.1 if it exists, but the previous `Cargo.toml` had 0.7.1. 
+dioxus = { version = "0.7.1", features = ["fullstack", "router"] } 
 # I will check if 0.7.1 supports fullstack. The error log showed downloads for 0.7.2, so it exists.
 # I will use 0.7.2 to match the CLI output I saw earlier.
 
