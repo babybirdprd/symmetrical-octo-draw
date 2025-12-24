@@ -13,6 +13,9 @@ use crate::model::{AgentConfig, AgentProvider};
 mod server_agent {
     use super::*;
     use crate::server_state::{AGENT_CHANNEL, AGENT_CONFIG, AGENT_HISTORY};
+    use radkit::models::providers::{
+        AnthropicLlm, DeepSeekLlm, GeminiLlm, GroqLlm, OpenAILlm, OpenRouterLlm,
+    };
     use radkit::{agent::LlmWorker, macros::tool, models::Thread, tools::ToolResult};
     use schemars::JsonSchema;
     use std::time::Duration;
@@ -131,7 +134,7 @@ mod server_agent {
                         tokio::time::sleep(Duration::from_secs(5)).await;
                         continue;
                     }
-                    
+
                     if config.model.is_empty() {
                         println!("Agent: No model set. Waiting...");
                         tokio::time::sleep(Duration::from_secs(5)).await;
@@ -150,40 +153,9 @@ mod server_agent {
                         config.research_topic
                     );
 
-                    // Helper to run worker with any LLM
-                    async fn run_worker<L: radkit::models::BaseLlm>(
-                        llm: L,
-                        prompt: &str,
-                        search: impl radkit::tools::Tool + 'static,
-                        draw_shape: impl radkit::tools::Tool + 'static,
-                        wipe_board: impl radkit::tools::Tool + 'static,
-                    ) -> Result<String, radkit::errors::AgentError> {
-                        let worker = LlmWorker::<String>::builder(llm)
-                            .with_tool(search)
-                            .with_tool(draw_shape)
-                            .with_tool(wipe_board)
-                            .build();
-                        let thread = Thread::from_user(prompt);
-                        worker.run(thread).await
-                    }
-
                     let result = match config.provider {
-                        AgentProvider::OpenAI | AgentProvider::Custom | AgentProvider::Groq | AgentProvider::OpenRouter => {
-                            // All OpenAI-compatible providers
+                        AgentProvider::OpenAI => {
                             std::env::set_var("OPENAI_API_KEY", &config.api_key);
-                            
-                            // Set base URL for custom endpoints
-                            if let Some(base_url) = &config.base_url {
-                                std::env::set_var("OPENAI_BASE_URL", base_url);
-                            } else {
-                                // Set default base URLs for known providers
-                                match config.provider {
-                                    AgentProvider::Groq => std::env::set_var("OPENAI_BASE_URL", "https://api.groq.com/openai/v1"),
-                                    AgentProvider::OpenRouter => std::env::set_var("OPENAI_BASE_URL", "https://openrouter.ai/api/v1"),
-                                    _ => std::env::remove_var("OPENAI_BASE_URL"),
-                                }
-                            }
-                            
                             match OpenAILlm::from_env(&config.model) {
                                 Ok(llm) => {
                                     let worker = LlmWorker::<String>::builder(llm)
@@ -212,27 +184,64 @@ mod server_agent {
                                 Err(e) => Err(e.into()),
                             }
                         }
-                        AgentProvider::Gemini => {
-                            // Gemini would need a separate implementation
-                            // For now, try using OpenAI-compatible if base_url is set
-                            if let Some(base_url) = &config.base_url {
-                                std::env::set_var("OPENAI_API_KEY", &config.api_key);
-                                std::env::set_var("OPENAI_BASE_URL", base_url);
-                                match OpenAILlm::from_env(&config.model) {
-                                    Ok(llm) => {
-                                        let worker = LlmWorker::<String>::builder(llm)
-                                            .with_tool(search)
-                                            .with_tool(draw_shape)
-                                            .with_tool(wipe_board)
-                                            .build();
-                                        let thread = Thread::from_user(&prompt);
-                                        worker.run(thread).await
-                                    }
-                                    Err(e) => Err(e.into()),
+                        AgentProvider::OpenRouter => {
+                            std::env::set_var("OPENROUTER_API_KEY", &config.api_key);
+                            match OpenRouterLlm::from_env(&config.model) {
+                                Ok(llm) => {
+                                    let worker = LlmWorker::<String>::builder(llm)
+                                        .with_tool(search)
+                                        .with_tool(draw_shape)
+                                        .with_tool(wipe_board)
+                                        .build();
+                                    let thread = Thread::from_user(&prompt);
+                                    worker.run(thread).await
                                 }
-                            } else {
-                                println!("Agent: Gemini requires a base_url for OpenAI-compatible access");
-                                continue;
+                                Err(e) => Err(e.into()),
+                            }
+                        }
+                        AgentProvider::Gemini => {
+                            std::env::set_var("GEMINI_API_KEY", &config.api_key);
+                            match GeminiLlm::from_env(&config.model) {
+                                Ok(llm) => {
+                                    let worker = LlmWorker::<String>::builder(llm)
+                                        .with_tool(search)
+                                        .with_tool(draw_shape)
+                                        .with_tool(wipe_board)
+                                        .build();
+                                    let thread = Thread::from_user(&prompt);
+                                    worker.run(thread).await
+                                }
+                                Err(e) => Err(e.into()),
+                            }
+                        }
+                        AgentProvider::Groq => {
+                            std::env::set_var("GROQ_API_KEY", &config.api_key);
+                            match GroqLlm::from_env(&config.model) {
+                                Ok(llm) => {
+                                    let worker = LlmWorker::<String>::builder(llm)
+                                        .with_tool(search)
+                                        .with_tool(draw_shape)
+                                        .with_tool(wipe_board)
+                                        .build();
+                                    let thread = Thread::from_user(&prompt);
+                                    worker.run(thread).await
+                                }
+                                Err(e) => Err(e.into()),
+                            }
+                        }
+                        AgentProvider::DeepSeek => {
+                            std::env::set_var("DEEPSEEK_API_KEY", &config.api_key);
+                            match DeepSeekLlm::from_env(&config.model) {
+                                Ok(llm) => {
+                                    let worker = LlmWorker::<String>::builder(llm)
+                                        .with_tool(search)
+                                        .with_tool(draw_shape)
+                                        .with_tool(wipe_board)
+                                        .build();
+                                    let thread = Thread::from_user(&prompt);
+                                    worker.run(thread).await
+                                }
+                                Err(e) => Err(e.into()),
                             }
                         }
                     };

@@ -52,61 +52,50 @@ pub enum Action {
     NewBoard,
 }
 
-/// Supported LLM providers
+/// Supported LLM providers (matches radkit::models::providers)
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 pub enum AgentProvider {
     #[default]
     OpenAI,
     Anthropic,
+    OpenRouter,
     Gemini,
     Groq,
-    OpenRouter,
-    Custom, // For any OpenAI-compatible endpoint
+    DeepSeek,
 }
 
 impl AgentProvider {
-    /// Returns all available providers for UI display
     pub fn all() -> Vec<AgentProvider> {
         vec![
             AgentProvider::OpenAI,
             AgentProvider::Anthropic,
+            AgentProvider::OpenRouter,
             AgentProvider::Gemini,
             AgentProvider::Groq,
-            AgentProvider::OpenRouter,
-            AgentProvider::Custom,
+            AgentProvider::DeepSeek,
         ]
     }
 
-    /// Returns the display name for the provider
     pub fn display_name(&self) -> &'static str {
         match self {
             AgentProvider::OpenAI => "OpenAI",
             AgentProvider::Anthropic => "Anthropic",
+            AgentProvider::OpenRouter => "OpenRouter",
             AgentProvider::Gemini => "Google Gemini",
             AgentProvider::Groq => "Groq",
-            AgentProvider::OpenRouter => "OpenRouter",
-            AgentProvider::Custom => "Custom (OpenAI-compatible)",
+            AgentProvider::DeepSeek => "DeepSeek",
         }
     }
 
-    /// Returns the default model for each provider
     pub fn default_model(&self) -> &'static str {
         match self {
             AgentProvider::OpenAI => "gpt-4o",
             AgentProvider::Anthropic => "claude-3-5-sonnet-20241022",
-            AgentProvider::Gemini => "gemini-pro",
+            AgentProvider::OpenRouter => "anthropic/claude-3.5-sonnet",
+            AgentProvider::Gemini => "gemini-1.5-flash-latest",
             AgentProvider::Groq => "llama-3.1-70b-versatile",
-            AgentProvider::OpenRouter => "openai/gpt-4o",
-            AgentProvider::Custom => "gpt-4o",
+            AgentProvider::DeepSeek => "deepseek-chat",
         }
-    }
-
-    /// Returns whether this provider supports/requires a base_url
-    pub fn supports_base_url(&self) -> bool {
-        matches!(
-            self,
-            AgentProvider::OpenAI | AgentProvider::Custom | AgentProvider::OpenRouter
-        )
     }
 }
 
@@ -116,7 +105,6 @@ pub struct AgentConfig {
     pub provider: AgentProvider,
     pub model: String,
     pub api_key: String,
-    pub base_url: Option<String>, // For OpenAI-compatible endpoints (Azure, local LLMs, etc.)
     pub system_prompt: String,
     pub research_topic: String,
 }
@@ -125,11 +113,10 @@ impl Default for AgentConfig {
     fn default() -> Self {
         Self {
             provider: AgentProvider::OpenAI,
-            model: String::new(),  // Empty by default - user must enter
+            model: String::new(),
             api_key: String::new(),
-            base_url: None,
             system_prompt: "You are a research agent. Use the tools available to research the topic and visualize the findings on the board.".to_string(),
-            research_topic: "Rust programming language state management".to_string(),
+            research_topic: String::new(),
         }
     }
 }

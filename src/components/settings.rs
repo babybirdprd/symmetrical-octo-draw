@@ -3,7 +3,7 @@ use crate::model::{AgentConfig, AgentProvider};
 use dioxus::prelude::*;
 
 #[component]
-pub fn Settings() -> Element {
+pub fn Settings(on_close: EventHandler<()>) -> Element {
     let mut config = use_signal(|| AgentConfig::default());
     let mut is_loading = use_signal(|| true);
     let mut save_status = use_signal(|| String::new());
@@ -25,39 +25,43 @@ pub fn Settings() -> Element {
             if let Err(e) = update_agent_config(current_config).await {
                 save_status.set(format!("Error: {}", e));
             } else {
-                save_status.set("Saved! Agent will use new config.".to_string());
+                save_status.set("Saved!".to_string());
             }
         });
     };
 
     if is_loading() {
-        return rsx! { div { class: "p-4", "Loading settings..." } };
+        return rsx! { div { class: "p-6 text-gray-400", "Loading..." } };
     }
 
     let current_provider = config.read().provider.clone();
-    let show_base_url = current_provider.supports_base_url();
 
     rsx! {
-        div { class: "p-4 bg-white border rounded shadow-lg w-full max-w-md space-y-4",
-            h2 { class: "text-xl font-bold mb-2", "Agent Settings" }
+        div { class: "p-6 space-y-4",
+            div { class: "flex justify-between items-center mb-4",
+                h2 { class: "text-xl font-bold text-white", "API Settings" }
+                button {
+                    class: "text-gray-400 hover:text-white text-2xl",
+                    onclick: move |_| on_close.call(()),
+                    "×"
+                }
+            }
 
-            // Provider Selection
+            // Provider
             div {
-                label { class: "block text-sm font-medium text-gray-700 mb-1", "Provider" }
+                label { class: "block text-sm font-medium text-gray-300 mb-1", "Provider" }
                 select {
-                    class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500",
-                    value: "{current_provider.display_name()}",
+                    class: "w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500",
                     onchange: move |evt| {
                         let val = evt.value();
                         let provider = match val.as_str() {
                             "Anthropic" => AgentProvider::Anthropic,
+                            "OpenRouter" => AgentProvider::OpenRouter,
                             "Google Gemini" => AgentProvider::Gemini,
                             "Groq" => AgentProvider::Groq,
-                            "OpenRouter" => AgentProvider::OpenRouter,
-                            "Custom (OpenAI-compatible)" => AgentProvider::Custom,
+                            "DeepSeek" => AgentProvider::DeepSeek,
                             _ => AgentProvider::OpenAI,
                         };
-                        // Update provider and set default model if empty
                         let mut cfg = config.write();
                         if cfg.model.is_empty() {
                             cfg.model = provider.default_model().to_string();
@@ -74,86 +78,50 @@ pub fn Settings() -> Element {
                 }
             }
 
-            // Model Name
+            // Model
             div {
-                label { class: "block text-sm font-medium text-gray-700 mb-1", "Model Name" }
+                label { class: "block text-sm font-medium text-gray-300 mb-1", "Model" }
                 input {
-                    class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500",
+                    class: "w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500",
                     r#type: "text",
-                    placeholder: "e.g. gpt-4o, claude-3-5-sonnet-20241022",
+                    placeholder: current_provider.default_model(),
                     value: "{config.read().model}",
                     oninput: move |evt| config.write().model = evt.value()
-                }
-                p { class: "text-xs text-gray-500 mt-1",
-                    "Enter the exact model name from your provider"
                 }
             }
 
             // API Key
             div {
-                label { class: "block text-sm font-medium text-gray-700 mb-1", "API Key" }
+                label { class: "block text-sm font-medium text-gray-300 mb-1", "API Key" }
                 input {
-                    class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500",
+                    class: "w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500",
                     r#type: "password",
-                    placeholder: "sk-...",
+                    placeholder: "Enter your API key",
                     value: "{config.read().api_key}",
                     oninput: move |evt| config.write().api_key = evt.value()
                 }
             }
 
-            // Base URL (only shown for providers that support it)
-            if show_base_url {
-                div {
-                    label { class: "block text-sm font-medium text-gray-700 mb-1", "Base URL (optional)" }
-                    input {
-                        class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500",
-                        r#type: "text",
-                        placeholder: "https://api.openai.com/v1",
-                        value: "{config.read().base_url.clone().unwrap_or_default()}",
-                        oninput: move |evt| {
-                            let val = evt.value();
-                            config.write().base_url = if val.is_empty() { None } else { Some(val) };
-                        }
-                    }
-                    p { class: "text-xs text-gray-500 mt-1",
-                        "For Azure, local LLMs, or custom endpoints"
-                    }
-                }
-            }
-
-            // Research Topic
-            div {
-                label { class: "block text-sm font-medium text-gray-700 mb-1", "Research Topic" }
-                input {
-                    class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500",
-                    r#type: "text",
-                    placeholder: "What should the agent research?",
-                    value: "{config.read().research_topic}",
-                    oninput: move |evt| config.write().research_topic = evt.value()
-                }
-            }
-
             // System Prompt
             div {
-                label { class: "block text-sm font-medium text-gray-700 mb-1", "System Prompt" }
+                label { class: "block text-sm font-medium text-gray-300 mb-1", "System Prompt" }
                 textarea {
-                    class: "w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 h-24",
+                    class: "w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 h-20 resize-none",
                     value: "{config.read().system_prompt}",
                     oninput: move |evt| config.write().system_prompt = evt.value()
                 }
             }
 
-            // Save Button
+            // Save
             button {
-                class: "w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition font-medium",
+                class: "w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-colors",
                 onclick: save_settings,
-                "Save & Apply"
+                "Save"
             }
 
-            // Status Message
             if !save_status().is_empty() {
                 p {
-                    class: if save_status().starts_with("Error") { "text-red-600 text-sm" } else { "text-green-600 text-sm" },
+                    class: if save_status().starts_with("Error") { "text-red-400 text-sm" } else { "text-green-400 text-sm" },
                     "{save_status()}"
                 }
             }
