@@ -2,7 +2,6 @@
 // need dioxus
 use dioxus::prelude::*;
 
-use components::Hero;
 use views::{Blog, Home, Navbar};
 
 /// Define a components module that contains all shared components for our app.
@@ -17,6 +16,9 @@ mod state;
 mod agent;
 /// Define tools
 mod tools;
+/// Define server-side state
+#[cfg(feature = "server")]
+mod server_state;
 
 /// The Route enum is used to define the structure of internal routes in our app. All route enums need to derive
 /// the [`Routable`] trait, which provides the necessary methods for the router to work.

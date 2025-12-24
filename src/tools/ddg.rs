@@ -1,6 +1,6 @@
 use radkit::tools::{FunctionTool, ToolResult};
 use serde::Deserialize;
-use reqwest::blocking::Client;
+use reqwest::Client;
 use scraper::{Html, Selector};
 use serde_json::json;
 
@@ -14,8 +14,24 @@ pub fn make_ddg_tool() -> FunctionTool {
         "duckduckgo_search",
         "Search the web using DuckDuckGo to find information about a topic.",
         |args, _ctx| Box::pin(async move {
-            // Parse args manually
-            let args: DuckDuckGoArgs = match serde_json::from_value(args) {
+            // Convert args to Value if it's not already (it is passed as Value by framework usually, but here manual call might pass Value).
+            // But if the signature is `Value`, then `from_value` works.
+            // The error said `args` is `HashMap<String, Value>`.
+            // Wait, why? `FunctionTool` defined in `radkit` likely uses `serde_json::Value` as args?
+            // Or maybe `FunctionTool::new` takes a closure where args is `Value`?
+            // In `examples/tool_usage.rs`:
+            // `|args, _ctx| Box::pin(async move { let a = args["a"]...`
+            // implies args is a `Value` (implementing Index).
+            // The error `expected Value, found HashMap` implies that in `radkit` version I am using, the closure argument might be `HashMap`?
+            // Let's assume it IS `HashMap<String, Value>` based on the error.
+            // If so, `serde_json::to_value(args)` -> Value -> `from_value`.
+
+            // However, the error said: `expected enum serde_json::Value found struct HashMap<std::string::String, serde_json::Value>`
+            // This means the `args` variable in the closure IS a HashMap.
+
+            let args_value = serde_json::Value::Object(args.into_iter().collect());
+
+            let args: DuckDuckGoArgs = match serde_json::from_value(args_value) {
                 Ok(a) => a,
                 Err(e) => return ToolResult::error(format!("Invalid arguments: {}", e)),
             };
@@ -23,11 +39,14 @@ pub fn make_ddg_tool() -> FunctionTool {
             let client = Client::new();
             let url = format!("https://html.duckduckgo.com/html/?q={}", args.query);
             
-            // Blocking call inside async block - use spawn_blocking in real app
-            match client.get(&url).header("User-Agent", "Mozilla/5.0").send() {
+            match client.get(&url).header("User-Agent", "Mozilla/5.0").send().await {
                 Ok(resp) => {
                     if resp.status().is_success() {
-                        let body = resp.text().unwrap_or_default();
+                        let body = match resp.text().await {
+                            Ok(text) => text,
+                            Err(e) => return ToolResult::error(format!("Failed to read body: {}", e)),
+                        };
+
                         let document = Html::parse_document(&body);
                         let result_selector = Selector::parse(".result__body").unwrap();
                         
