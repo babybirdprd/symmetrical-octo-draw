@@ -60,7 +60,7 @@ pub enum AgentProvider {
     Anthropic,
     OpenRouter,
     Gemini,
-    Groq,
+    Grok,
     DeepSeek,
 }
 
@@ -71,7 +71,7 @@ impl AgentProvider {
             AgentProvider::Anthropic,
             AgentProvider::OpenRouter,
             AgentProvider::Gemini,
-            AgentProvider::Groq,
+            AgentProvider::Grok,
             AgentProvider::DeepSeek,
         ]
     }
@@ -82,7 +82,7 @@ impl AgentProvider {
             AgentProvider::Anthropic => "Anthropic",
             AgentProvider::OpenRouter => "OpenRouter",
             AgentProvider::Gemini => "Google Gemini",
-            AgentProvider::Groq => "Groq",
+            AgentProvider::Grok => "Grok",
             AgentProvider::DeepSeek => "DeepSeek",
         }
     }
@@ -93,7 +93,7 @@ impl AgentProvider {
             AgentProvider::Anthropic => "claude-3-5-sonnet-20241022",
             AgentProvider::OpenRouter => "anthropic/claude-3.5-sonnet",
             AgentProvider::Gemini => "gemini-1.5-flash-latest",
-            AgentProvider::Groq => "llama-3.1-70b-versatile",
+            AgentProvider::Grok => "llama-3.1-70b-versatile",
             AgentProvider::DeepSeek => "deepseek-chat",
         }
     }

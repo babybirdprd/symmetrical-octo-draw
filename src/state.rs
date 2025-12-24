@@ -1,4 +1,4 @@
-use crate::model::{Action, Board, Shape};
+use crate::model::{Action, Board};
 use dioxus::prelude::*;
 
 #[derive(Clone, Copy)]

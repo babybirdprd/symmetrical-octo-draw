@@ -58,15 +58,15 @@ pub fn Settings(on_close: EventHandler<()>) -> Element {
                             "Anthropic" => AgentProvider::Anthropic,
                             "OpenRouter" => AgentProvider::OpenRouter,
                             "Google Gemini" => AgentProvider::Gemini,
-                            "Groq" => AgentProvider::Groq,
+                            "Grok" => AgentProvider::Grok,
                             "DeepSeek" => AgentProvider::DeepSeek,
                             _ => AgentProvider::OpenAI,
                         };
                         let mut cfg = config.write();
+                        cfg.provider = provider.clone();
                         if cfg.model.is_empty() {
                             cfg.model = provider.default_model().to_string();
                         }
-                        cfg.provider = provider;
                     },
                     for provider in AgentProvider::all() {
                         option {
