@@ -1,4 +1,9 @@
 [application]
+name = "dioxus-web-jumpstart"
+
+# Fullstack platform configuration
+[application.platforms]
+fullstack = {}
 
 [web.app]
 

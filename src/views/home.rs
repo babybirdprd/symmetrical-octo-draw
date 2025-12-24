@@ -1,9 +1,15 @@
-use crate::state::BoardState;
-use crate::model::{ShapeType, Action};
 use crate::agent::poll_agent;
 use crate::components::settings::Settings;
+use crate::model::{Action, ShapeType};
+use crate::state::BoardState;
 use dioxus::prelude::*;
 use std::time::Duration;
+
+// WASM-compatible async sleep
+#[cfg(target_arch = "wasm32")]
+use gloo_timers::future::sleep;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::time::sleep;
 
 /// The Home page component that will be rendered when the current route is `[Route::Home]`
 #[component]
@@ -17,7 +23,7 @@ pub fn Home() -> Element {
     // Polling Loop
     use_coroutine(move |mut _rx: UnboundedReceiver<()>| async move {
         // Wait for hydration/mount
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_millis(100)).await;
 
         loop {
             let current_idx = *last_index.read();
@@ -30,22 +36,21 @@ pub fn Home() -> Element {
                     *last_index.write() += actions.len();
                 }
             }
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(500)).await;
         }
     });
 
     // Playback state
     let mut playback_active = use_signal(|| false);
 
-    // Video export JS helper - Only on WASM
-    #[cfg(target_arch = "wasm32")]
-    let eval = use_eval();
+    // Video export JS helper - uses document::eval() in WASM
 
     // Setup Recorder
     use_effect(move || {
         #[cfg(target_arch = "wasm32")]
         {
-            let _ = eval(r#"
+            let _ = document::eval(
+                r#"
                 window.setupRecorder = () => {
                     const canvas = document.createElement('canvas');
                     canvas.width = 800;
@@ -104,7 +109,8 @@ pub fn Home() -> Element {
                 };
 
                 window.setupRecorder();
-            "#);
+            "#,
+            );
         }
     });
 
@@ -125,7 +131,7 @@ pub fn Home() -> Element {
             }
 
             h1 { class: "text-2xl font-bold mb-4", "Agent Excalidraw" }
-            
+
             // Canvas Area
             div {
                 class: "border-2 border-gray-300 bg-white shadow-lg w-[800px] h-[600px] relative",
@@ -184,7 +190,7 @@ pub fn Home() -> Element {
 
                         spawn(async move {
                             for action in history {
-                                tokio::time::sleep(Duration::from_millis(500)).await;
+                                sleep(Duration::from_millis(500)).await;
                                 match action {
                                     Action::Draw(shape) => { s.board.write().shapes.push(shape); }
                                     Action::Wipe => { s.board.write().shapes.clear(); }
@@ -214,15 +220,14 @@ pub fn Home() -> Element {
                             let history = s.history.read().clone();
                             s.board.write().shapes.clear();
 
-                            // Use the captured eval from component scope?
-                            let eval = eval;
+                            // Use document::eval for JS interop
 
                             spawn(async move {
-                                let _ = eval("window.startRecording()");
-                                let _ = eval("window.captureFrame('board-svg')").await;
+                                let _ = document::eval("window.startRecording()");
+                                let _ = document::eval("window.captureFrame('board-svg')");
 
                                 for action in history {
-                                    tokio::time::sleep(Duration::from_millis(500)).await;
+                                    sleep(Duration::from_millis(500)).await;
 
                                     match action {
                                         Action::Draw(shape) => { s.board.write().shapes.push(shape); }
@@ -230,12 +235,12 @@ pub fn Home() -> Element {
                                         Action::NewBoard => { s.board.write().shapes.clear(); }
                                     }
 
-                                    tokio::time::sleep(Duration::from_millis(50)).await;
-                                    let _ = eval("window.captureFrame('board-svg')").await;
+                                    sleep(Duration::from_millis(50)).await;
+                                    let _ = document::eval("window.captureFrame('board-svg')");
                                 }
 
-                                tokio::time::sleep(Duration::from_millis(500)).await;
-                                let _ = eval("window.stopRecording()");
+                                sleep(Duration::from_millis(500)).await;
+                                let _ = document::eval("window.stopRecording()");
 
                                 playback_active.set(false);
                             });
@@ -246,7 +251,7 @@ pub fn Home() -> Element {
                     "Export Video"
                 }
             }
-            
+
             div { class: "mt-4 text-sm text-gray-500",
                 "History count: {state.history.read().len()}"
             }
