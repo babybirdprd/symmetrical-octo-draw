@@ -1,6 +1,7 @@
 use crate::state::BoardState;
 use crate::model::{ShapeType, Action};
 use crate::agent::poll_agent;
+use crate::components::settings::Settings;
 use dioxus::prelude::*;
 use std::time::Duration;
 
@@ -8,6 +9,7 @@ use std::time::Duration;
 #[component]
 pub fn Home() -> Element {
     let mut state = use_context_provider(|| BoardState::new());
+    let mut show_settings = use_signal(|| false);
 
     // Track last received index for reliable polling
     let mut last_index = use_signal(|| 0);
@@ -107,7 +109,21 @@ pub fn Home() -> Element {
     });
 
     rsx! {
-        div { class: "flex flex-col items-center justify-center min-h-screen bg-gray-100",
+        div { class: "flex flex-col items-center justify-center min-h-screen bg-gray-100 relative",
+            div { class: "absolute top-4 right-4 z-50",
+                button {
+                    class: "p-2 bg-gray-200 rounded hover:bg-gray-300",
+                    onclick: move |_| show_settings.set(!show_settings()),
+                    if show_settings() { "Close Settings" } else { "Settings" }
+                }
+            }
+
+            if show_settings() {
+                 div { class: "absolute top-16 right-4 z-50",
+                     Settings {}
+                 }
+            }
+
             h1 { class: "text-2xl font-bold mb-4", "Agent Excalidraw" }
             
             // Canvas Area

@@ -55,4 +55,16 @@ To run for a different platform, use the `--platform platform` flag. E.g.
 dx serve --platform desktop
 ```
 
+### Agent Configuration
+
+The application includes an autonomous agent that researches topics and visualizes them on the canvas.
+To configure the agent:
+1. Click the "Settings" button in the top right corner.
+2. Select your AI provider (OpenAI or Anthropic).
+3. Enter your API Key.
+4. Customize the Model name (e.g., `gpt-4o` or `claude-3-5-sonnet`).
+5. Set the Research Topic and System Prompt.
+6. Click "Save & Restart Agent".
+
+The agent runs on the server side and will periodically update the board.
 
