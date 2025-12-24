@@ -171,6 +171,17 @@ pub fn Home() -> Element {
                                             stroke_width: "2",
                                             rx: "8"
                                         }
+                                        if !shape.label.is_empty() {
+                                            text {
+                                                x: "{shape.x + shape.width / 2.0}",
+                                                y: "{shape.y + shape.height / 2.0}",
+                                                text_anchor: "middle",
+                                                dominant_baseline: "middle",
+                                                font_weight: "bold",
+                                                fill: "black",
+                                                "{shape.label}"
+                                            }
+                                        }
                                     },
                                     ShapeType::Circle => rsx! {
                                         circle {
@@ -180,6 +191,17 @@ pub fn Home() -> Element {
                                             fill: "{shape.color}",
                                             stroke: "#333",
                                             stroke_width: "2"
+                                        }
+                                        if !shape.label.is_empty() {
+                                            text {
+                                                x: "{shape.x + shape.width / 2.0}",
+                                                y: "{shape.y + shape.height / 2.0}",
+                                                text_anchor: "middle",
+                                                dominant_baseline: "middle",
+                                                font_weight: "bold",
+                                                fill: "black",
+                                                "{shape.label}"
+                                            }
                                         }
                                     },
                                     ShapeType::Line => rsx! {
@@ -191,6 +213,17 @@ pub fn Home() -> Element {
                                             stroke: "{shape.color}",
                                             stroke_width: "3",
                                             stroke_linecap: "round"
+                                        }
+                                        if !shape.label.is_empty() {
+                                            text {
+                                                x: "{shape.x + shape.width / 2.0}",
+                                                y: "{shape.y + shape.height / 2.0}",
+                                                text_anchor: "middle",
+                                                dominant_baseline: "middle",
+                                                font_weight: "bold",
+                                                fill: "black",
+                                                "{shape.label}"
+                                            }
                                         }
                                     },
                                 }
