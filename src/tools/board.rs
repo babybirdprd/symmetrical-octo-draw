@@ -18,7 +18,9 @@ pub fn make_draw_tool() -> FunctionTool {
         "draw_shape",
         "Draw a shape (rectangle, circle, or line) on the whiteboard.",
         |args, _ctx| Box::pin(async move {
-            let args: DrawShapeArgs = match serde_json::from_value(args) {
+            let args_value = serde_json::Value::Object(args.into_iter().collect());
+
+            let args: DrawShapeArgs = match serde_json::from_value(args_value) {
                 Ok(a) => a,
                 Err(e) => return ToolResult::error(format!("Invalid arguments: {}", e)),
             };
