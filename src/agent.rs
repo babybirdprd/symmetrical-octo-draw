@@ -45,7 +45,7 @@ mod server_agent {
 
                     // Build prompt with system instructions
                     let prompt = format!(
-                        "{}\n\nResearch topic: '{}'\n\nUse web_search to find information, then use draw_shape to create a visual presentation with multiple shapes representing key concepts. Use wipe_board first if the canvas has old content.",
+                        "{}\n\nResearch topic: '{}'\n\nUse web_search to find information, then use draw_shape to create a visual presentation with multiple shapes representing key concepts. Use wipe_board first if the canvas has old content.\n\nVISUAL LANGUAGE:\n- Use Rectangles for main concepts/categories.\n- Use Circles for specific facts or data points.\n- Use Lines to connect related shapes to form a Mind Map.\n- Instruction: You must use the `label` field to explain what each shape represents. Do not leave labels empty.",
                         config.system_prompt,
                         config.research_topic
                     );

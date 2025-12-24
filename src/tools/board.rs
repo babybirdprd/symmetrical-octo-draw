@@ -40,26 +40,25 @@ pub fn make_draw_tool() -> FunctionTool {
                 _ => ShapeType::Rectangle,
             };
 
-            // Auto-position based on history length if not specified
-            let history_len = AGENT_HISTORY.lock().map(|h| h.len()).unwrap_or(0);
-            let row = history_len / 4;
-            let col = history_len % 4;
-            
-            let x = args.x.unwrap_or(80.0 + (col as f64) * 180.0);
-            let y = args.y.unwrap_or(60.0 + (row as f64) * 130.0);
+            let x = args.x.unwrap_or(100.0);
+            let y = args.y.unwrap_or(100.0);
             let width = args.width.unwrap_or(150.0);
             let height = args.height.unwrap_or(100.0);
 
-            let shape = Shape::new(shape_type, x, y, width, height, args.color.clone());
             let label = args.label.clone().unwrap_or_default();
+            let shape = Shape::new(shape_type, x, y, width, height, args.color.clone(), label.clone());
             let action = Action::Draw(shape);
             
             println!("Tool: Drawing {} '{}' at ({}, {})", args.shape_type, label, x, y);
 
             // Send to channel AND history
             if let Ok(mut history) = AGENT_HISTORY.lock() {
+                let history_len = history.len();
                 history.push(action.clone());
+                // Only used for return value
+                let _ = history_len;
             }
+            let history_len = AGENT_HISTORY.lock().map(|h| h.len()).unwrap_or(0);
             let _ = AGENT_CHANNEL.send(action);
             
             ToolResult::success(json!({ 

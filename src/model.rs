@@ -17,6 +17,7 @@ pub struct Shape {
     pub width: f64,
     pub height: f64,
     pub color: String,
+    pub label: String,
 }
 
 impl Shape {
@@ -27,6 +28,7 @@ impl Shape {
         width: f64,
         height: f64,
         color: String,
+        label: String,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -36,6 +38,7 @@ impl Shape {
             width,
             height,
             color,
+            label,
         }
     }
 }
