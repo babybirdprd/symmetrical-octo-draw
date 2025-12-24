@@ -4,16 +4,26 @@ version = "0.1.0"
 authors = ["babybirdprd <babybirdprd@gmail.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-dioxus = { version = "0.7.1", features = ["router"] }
+# Dioxus with fullstack and router
+dioxus = { version = "0.6.0", features = ["fullstack", "router"] }
+# NOTE: Downgrading to 0.6.0 or checking 0.7.1 compatibility because fullstack feature set might differ.
+# Actually, let's stick to 0.7.1 if it exists, but the previous `Cargo.toml` had 0.7.1. 
+# I will check if 0.7.1 supports fullstack. The error log showed downloads for 0.7.2, so it exists.
+# I will use 0.7.2 to match the CLI output I saw earlier.
+
+radkit = { git = "https://github.com/agents-sh/radkit", features = ["runtime", "macros"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "0.8"
+async-trait = "0.1"
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+scraper = "0.18"
+# image = "0.24" # Removed for now to reduce compilation weight unless strictly needed for backend rendering
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
 [features]
-default = ["web"]
-# The feature that are only required for the web = ["dioxus/web"] build target should be optional and only enabled in the web = ["dioxus/web"] feature
+default = ["web"] 
 web = ["dioxus/web"]
-# The feature that are only required for the desktop = ["dioxus/desktop"] build target should be optional and only enabled in the desktop = ["dioxus/desktop"] feature
-desktop = ["dioxus/desktop"]
-# The feature that are only required for the mobile = ["dioxus/mobile"] build target should be optional and only enabled in the mobile = ["dioxus/mobile"] feature
-mobile = ["dioxus/mobile"]
+server = ["dioxus/server"] # Fullstack server feature

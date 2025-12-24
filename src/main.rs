@@ -9,6 +9,14 @@ use views::{Blog, Home, Navbar};
 mod components;
 /// Define a views module that contains the UI for all Layouts and Routes for our app.
 mod views;
+/// Define domain models
+mod model;
+/// Define state management
+mod state;
+/// Define agent logic
+mod agent;
+/// Define tools
+mod tools;
 
 /// The Route enum is used to define the structure of internal routes in our app. All route enums need to derive
 /// the [`Routable`] trait, which provides the necessary methods for the router to work.
@@ -41,6 +49,15 @@ const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 fn main() {
+    // Spawn the agent runtime (mock for now as we don't have a full LLM config)
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::thread;
+        thread::spawn(|| {
+            agent::init_agent();
+        });
+    }
+
     // The `launch` function is the main entry point for a dioxus app. It takes a component and renders it with the platform feature
     // you have enabled
     dioxus::launch(App);

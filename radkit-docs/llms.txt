@@ -1,0 +1,147 @@
+# radkit AI SDK - Companion Documentation for LLMs
+
+## CRITICAL: Feature Distinction
+radkit has two distinct modes. You MUST check the `Cargo.toml` features before generating code.
+1. **Core (Default)**: Stateless, library-only. Used for `LlmFunction`, `LlmWorker`.
+2. **Runtime (`feature = "runtime"`)**: Stateful, server-based. Used for `Agent`, `SkillHandler`, `Runtime`.
+
+## CORE TYPES (Always Available)
+
+### `radkit::models::Thread`
+**Pattern:** IMMUTABLE BUILDER. Methods consume `self` and return `Self`.
+**Constraint:** DO NOT try to mutate in place.
+```rust
+pub struct Thread { ... }
+impl Thread {
+    pub fn new() -> Self;
+    pub fn builder() -> ThreadBuilder; // Use this for complex construction
+
+    // IMMUTABLE - Returns new instance
+    pub fn add_event(self, event: Event) -> Self;
+    pub fn add_events(self, events: impl IntoIterator<Item = Event>) -> Self;
+    pub fn add_user_message(self, text: impl Into<String>) -> Self;
+    pub fn add_model_message(self, text: impl Into<String>) -> Self;
+}
+```
+
+### `radkit::models::Event` / `radkit::models::Role`
+```rust
+pub enum Role { System, User, Assistant, Tool }
+
+pub struct Event {
+    pub role: Role,
+    pub content: Content,
+    ...
+}
+```
+
+### `radkit::agent::LlmFunction`
+**Purpose:** Stateless, single-turn LLM call with structured output.
+**Requirement:** Response type must derive `Serialize`, `Deserialize`, `JsonSchema`, AND `radkit::macros::LLMOutput`.
+```rust
+pub struct LlmFunction<Response> { ... }
+impl<Response> LlmFunction<Response> {
+    pub fn new(llm: impl BaseLlm, prompt: impl Into<String>) -> Self;
+    pub fn run(self, input: impl Serialize) -> impl Future<Output = Result<Response, AgentError>>;
+}
+```
+
+### `radkit::agent::LlmWorker`
+**Purpose:** Multi-turn LLM loop with tool calling support.
+**Constraint:** Use `#[tool]` macro for functions.
+```rust
+pub struct LlmWorker { ... }
+impl LlmWorker {
+    pub fn builder() -> LlmWorkerBuilder;
+}
+
+pub struct LlmWorkerBuilder { ... }
+impl LlmWorkerBuilder {
+    pub fn llm(self, llm: impl BaseLlm) -> Self;
+    pub fn system_prompt(self, prompt: impl Into<String>) -> Self;
+    pub fn add_tool(self, tool: impl Tool) -> Self; // Use tool! macro or FunctionTool
+    pub fn run(self, thread: Thread) -> impl Future<Output = Result<Thread, AgentError>>;
+}
+```
+
+## RUNTIME TYPES (Requires `feature = "runtime"`)
+
+### `radkit::agent::SkillHandler`
+**Purpose:** The logic unit of an A2A Agent.
+**Constraint:** Must implement `on_request`. `on_input_received` is optional (for multi-turn).
+```rust
+#[async_trait]
+pub trait SkillHandler: MaybeSend + MaybeSync {
+    async fn on_request(
+        &self,
+        state: &mut State,
+        progress: &ProgressSender,
+        runtime: &dyn AgentRuntime,
+        content: Content,
+    ) -> Result<OnRequestResult, AgentError>;
+
+    async fn on_input_received(
+        &self,
+        state: &mut State,
+        progress: &ProgressSender,
+        runtime: &dyn AgentRuntime,
+        content: Content,
+    ) -> Result<OnInputResult, AgentError> { ... }
+}
+```
+
+### `radkit::agent::OnRequestResult`
+**Purpose:** Controls the A2A State Machine transition from `on_request`.
+```rust
+pub enum OnRequestResult {
+    // Transition to TaskState::InputRequired
+    InputRequired {
+        message: Content,
+        slot: SkillSlot, // Tracking state for next input
+    },
+    // Transition to TaskState::Completed
+    Completed {
+        message: Option<Content>,
+        artifacts: Vec<Artifact>,
+    },
+    // Transition to TaskState::Failed
+    Failed {
+        error: Content,
+    },
+    // Transition to TaskState::Rejected
+    Rejected {
+        reason: Content,
+    }
+}
+```
+
+### `radkit::runtime::Runtime`
+**Purpose:** The server environment that hosts the Agent.
+```rust
+pub struct Runtime { ... }
+impl Runtime {
+    pub fn builder(agent: AgentDefinition, llm: impl BaseLlm) -> RuntimeBuilder;
+
+    // Start the server (Native only)
+    pub async fn serve(self, address: impl AsRef<str>) -> AgentResult<()>;
+}
+```
+
+### `radkit::agent::Artifact`
+**Purpose:** Represents an output file or data object.
+```rust
+pub struct Artifact { ... }
+impl Artifact {
+    pub fn from_json<T: Serialize>(name: &str, data: &T) -> Result<Self, AgentError>;
+    pub fn from_text(name: &str, text: &str) -> Self;
+    pub fn from_file(name: &str, mime_type: &str, data: &[u8]) -> Self;
+}
+```
+
+## Common Pitfalls
+1. **Thread Mutation:** `thread.add_event(e)` returns a NEW thread. `thread.add_event(e);` discards it.
+   - **WRONG:** `let mut t = Thread::new(); t.add_event(e);`
+   - **RIGHT:** `let t = Thread::new().add_event(e);`
+2. **Feature Flags:** `radkit::runtime` module does NOT exist without `features = ["runtime"]`.
+3. **Async Traits:** `SkillHandler` uses `#[async_trait]`.
+4. **LLM Output:** Use `#[derive(LLMOutput)]` from `radkit::macros` for robust JSON parsing.

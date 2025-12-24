@@ -1,0 +1,24 @@
+[package]
+name = "radkit-docs-companion"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# This manifest allows you to run the examples directly.
+# cargo run --example core_minimal --features macros
+# cargo run --example runtime_full --features "runtime, macros"
+
+[dependencies]
+# We point to the git repo as it is the source of truth
+radkit = { git = "https://github.com/agents-sh/radkit" }
+
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "0.8"
+async-trait = "0.1"
+
+[features]
+default = []
+runtime = ["radkit/runtime"]
+macros = ["radkit/macros"]
